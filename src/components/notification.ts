@@ -46,7 +46,7 @@ const Css = `
   }
 `
 
-const Html = (notificationText: string) => `
+const Html = (notificationText: string, disableText: string) => `
   <style>
     ${Css}
   </style>
@@ -54,7 +54,7 @@ const Html = (notificationText: string) => `
     <span class="arly-ms-rec"></span>
     <span class="arly-ms-text">${notificationText}</span>
 
-    <span class="arly-ms-disable">Disable</span>
+    <span class="arly-ms-disable">${disableText}</span>
   </div>
 `
 
@@ -77,17 +77,25 @@ export interface INotificationResult {
   disable: Promise<any>
 }
 
-export const append: (parentContainer: any, text?: string) => Promise<INotificationResult> = (
-  parentContainer: any, text?: string
+export interface INotification {
+  container?: HTMLElement | null
+  text?: string
+  disableText?: string
+}
+
+export const append: (notificationOptions?: INotification) => Promise<INotificationResult> = (
+  notificationOptions: INotification = {}
 ) => {
   return new Promise(resolve => {
     const notification = getNotification()
     if (!notification) {
       whenDomReady().then(() => {
         const language = (navigator as any).language || (navigator as any).userLanguage
-        const container: any = parentContainer || document.body
-        const notificationText = text || `I am listening for your search. Your language is ${language}`;
-        container.insertAdjacentHTML('beforeend', Html(notificationText))
+        const container: any = notificationOptions.container || document.body
+        const notificationText =
+          notificationOptions.text || `I am listening for your search. Your language is ${language}`
+        const disableText = notificationOptions.disableText || `Disable`
+        container.insertAdjacentHTML('beforeend', Html(notificationText, disableText))
         resolve(notificationEvents(getNotification()))
       })
     } else {

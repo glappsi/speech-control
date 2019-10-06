@@ -1,23 +1,26 @@
 import { Observable, Subscriber } from 'rxjs'
 import { finalize, filter } from 'rxjs/operators'
-import { append, remove, INotificationResult } from './components/notification'
+import { append, remove, INotificationResult, INotification } from './components/notification'
 
 export enum SpeechControlErrors {
   NoSpeechRecognition = 'no-speech-recognition',
   Disabled = 'disabled'
 }
 
+export { INotification }
+
+export interface IOptions {
+  recLanguage?: string
+}
+
 export class SpeechControl {
   _recognition?: SpeechRecognition
   _observable?: Observable<SpeechRecognitionEvent>
-  notification: {
-    container?: HTMLElement | null
-    text?: string
-  }
+  notification?: INotification
   recLanguage?: string
 
-  constructor(recLanguage?: string) {
-    this.recLanguage = recLanguage
+  constructor(options?: IOptions) {
+    this.recLanguage = options && options.recLanguage
     this.notification = {}
   }
 
@@ -55,8 +58,8 @@ export class SpeechControl {
     )
   }
 
-  public setNotification(container?: HTMLElement | null, text?: string) {
-    this.notification = { container, text }
+  public setNotification(notification: INotification) {
+    this.notification = notification
   }
 
   public on(term: string): Observable<SpeechRecognitionEvent> {
@@ -72,17 +75,15 @@ export class SpeechControl {
           .toLowerCase()
           .replace(/\s/g, ', ')
 
-        console.log('filter', item, term)
-
         return item.includes(term)
       })
     )
   }
 
-  public start(): Observable<SpeechRecognitionEvent> {
+  public start(notificationOptions?: INotification): Observable<SpeechRecognitionEvent> {
     return new Observable<SpeechRecognitionEvent>(subscriber => {
       if (this.isEnabled()) {
-        const notification = append(this.notification.container, this.notification.text)
+        const notification = append(notificationOptions || this.notification)
         notification.then((nr: INotificationResult) =>
           nr.disable.then(() => {
             this._disableRec()
@@ -100,6 +101,7 @@ export class SpeechControl {
   }
 
   public stop() {
+    remove()
     if (this._recognition) {
       this._recognition.stop()
     }

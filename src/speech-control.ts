@@ -1,5 +1,5 @@
-import { Observable, Subscriber } from 'rxjs'
-import { finalize, filter, debounceTime } from 'rxjs/operators'
+import { Observable, Subscriber, empty, throwError, timer } from 'rxjs'
+import { finalize, filter, debounceTime, expand, retryWhen, mergeMap } from 'rxjs/operators'
 import { append, remove, INotificationResult, INotification } from './components/notification'
 
 export enum SpeechControlErrors {
@@ -16,6 +16,7 @@ export interface IOptions {
 export class SpeechControl {
   _recognition?: SpeechRecognition
   _observable?: Observable<SpeechRecognitionEvent>
+  _stopped = false
   notification?: INotification
   recLanguage?: string
 
@@ -30,7 +31,7 @@ export class SpeechControl {
     this._recognition = new SpeechRecognition()
 
     if (this._recognition) {
-      this._recognition.continuous = true
+      // this._recognition.continuous = true
       if (this.recLanguage) {
         this._recognition.lang = this.recLanguage
       }
@@ -81,7 +82,8 @@ export class SpeechControl {
   }
 
   public start(notificationOptions?: INotification): Observable<SpeechRecognitionEvent> {
-    return new Observable<SpeechRecognitionEvent>(subscriber => {
+    this._stopped = false
+    const $rec = new Observable<SpeechRecognitionEvent>(subscriber => {
       if (this.isEnabled()) {
         const notification = append(notificationOptions || this.notification)
         notification.then((nr: INotificationResult) =>
@@ -97,11 +99,29 @@ export class SpeechControl {
       } else {
         subscriber.error(SpeechControlErrors.NoSpeechRecognition)
       }
-    }).pipe(debounceTime(500))
+    }).pipe(
+      debounceTime(500),
+      retryWhen((error: Observable<any>) => {
+        return error.pipe(
+          mergeMap((error: any) => {
+            // retry if noting said
+            if (error && error.error === 'no-speech') {
+              return timer(500)
+            }
+            return throwError(error)
+          })
+        )
+      })
+    )
+
+    // implemented a custom continous mode her, since it didnt work on smartphone chrome
+    return $rec.pipe(expand(() => (this._stopped ? empty() : $rec)))
   }
 
   public stop() {
     remove()
+    console.log('stop')
+    this._stopped = true
     if (this._recognition) {
       this._recognition.stop()
     }

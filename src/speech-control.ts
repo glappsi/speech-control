@@ -17,6 +17,7 @@ export class SpeechControl {
   _recognition?: SpeechRecognition
   _observable?: Observable<SpeechRecognitionEvent>
   _stopped = false
+  _notificationShown = false
   notification?: INotification
   recLanguage?: string
 
@@ -85,15 +86,18 @@ export class SpeechControl {
     this._stopped = false
     const $rec = new Observable<SpeechRecognitionEvent>(subscriber => {
       if (this.isEnabled()) {
-        const notification = append(notificationOptions || this.notification)
-        notification.then((nr: INotificationResult) =>
-          nr.disable.then(() => {
-            this._disableRec()
-            subscriber.error(SpeechControlErrors.Disabled)
-          })
-        )
+        if (!this._notificationShown) {
+          const notification = append(notificationOptions || this.notification)
+          notification.then((nr: INotificationResult) =>
+            nr.disable.then(() => {
+              this._disableRec()
+              subscriber.error(SpeechControlErrors.Disabled)
+            })
+          )
 
-        setTimeout(remove, 3000)
+          setTimeout(remove, 3000)
+          this._notificationShown = true
+        }
 
         this._record(subscriber)
       } else {

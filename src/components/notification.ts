@@ -6,7 +6,7 @@ const Css = `
     top: 0.75rem;
     left: 0.75rem;
     right: 0.75rem;
-    z-index: 1000;
+    z-index: 100000;
     border-radius: 6px;
     display: flex;
     align-items: center;

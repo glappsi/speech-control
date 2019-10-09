@@ -120,7 +120,6 @@ export class SpeechControl {
 
   public stop() {
     remove()
-    console.log('stop')
     this._stopped = true
     if (this._recognition) {
       this._recognition.stop()

@@ -1,5 +1,5 @@
 import { Observable, Subscriber } from 'rxjs'
-import { finalize, filter } from 'rxjs/operators'
+import { finalize, filter, debounceTime } from 'rxjs/operators'
 import { append, remove, INotificationResult, INotification } from './components/notification'
 
 export enum SpeechControlErrors {
@@ -97,7 +97,7 @@ export class SpeechControl {
       } else {
         subscriber.error(SpeechControlErrors.NoSpeechRecognition)
       }
-    })
+    }).pipe(debounceTime(500))
   }
 
   public stop() {

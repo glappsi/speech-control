@@ -28,11 +28,18 @@ You can also just listen for specific keywords/phrases. In this case the subscri
   speechControlContinue = speechControl.on('continue').subscribe(SpeechRecognitionEvent => {}, SpeechControlErrors | SpeechRecognitionError => {}, Event => {});
 ```
 
+### Permission Handling
+
+There are two ways to handle permissions. You can ask the user directly or wait for him to allow the microphone permission.
+
+- `askForPermission(): Observable<any>`: triggers the microphone permission prompt and completes when the user allows, errors when denied
+- `whenPermissionGranted(): Observable<any>`: completes when the microphone permission is granted, errors when denied
+
 ### Other
 
-- `setNotification: {container?: HtmlElement, text?: string, disableText?:string}`: lets you customize the notification
-- `isEnabled`: checks if SpeechRecognition is supported or user disabled the speech recognition
-- `stop`: stops the recognition and removes the notification
+- `setNotification({container?: HtmlElement, text?: string, disableText?:string}): void`: lets you customize the notification
+- `isEnabled(): boolean`: checks if SpeechRecognition is supported or user disabled the speech recognition
+- `stop(): void`: stops the recognition and removes the notification
 
 ### Options
 

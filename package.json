@@ -1,8 +1,15 @@
 {
   "name": "@aurally/speech-control",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "",
-  "keywords": [],
+  "keywords": [
+    "speech",
+    "voice",
+    "recognition",
+    "speech control",
+    "microphone",
+    "permission"
+  ],
   "main": "dist/speech-control.umd.js",
   "module": "dist/speech-control.es5.js",
   "typings": "dist/types/speech-control.d.ts",

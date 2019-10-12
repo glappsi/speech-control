@@ -1,5 +1,5 @@
 import { Observable, Subscriber, empty, throwError, timer } from 'rxjs'
-import { finalize, filter, debounceTime, expand, retryWhen, mergeMap } from 'rxjs/operators'
+import { finalize, filter, debounceTime, repeatWhen, retryWhen, mergeMap } from 'rxjs/operators'
 import { append, remove, INotificationResult, INotification } from './components/notification'
 
 export enum SpeechControlErrors {
@@ -84,7 +84,7 @@ export class SpeechControl {
 
   public start(notificationOptions?: INotification): Observable<SpeechRecognitionEvent> {
     this._stopped = false
-    const $rec = new Observable<SpeechRecognitionEvent>(subscriber => {
+    return new Observable<SpeechRecognitionEvent>(subscriber => {
       if (this.isEnabled()) {
         if (!this._notificationShown) {
           const notification = append(notificationOptions || this.notification)
@@ -105,6 +105,17 @@ export class SpeechControl {
       }
     }).pipe(
       debounceTime(500),
+      repeatWhen((complete: Observable<any>) => {
+        return complete.pipe(
+          mergeMap(() => {
+            // repeat because continouse does not work on all mobile devices
+            if (this._stopped) {
+              return empty()
+            }
+            return timer(500)
+          })
+        )
+      }),
       retryWhen((error: Observable<any>) => {
         return error.pipe(
           mergeMap((error: any) => {
@@ -117,9 +128,6 @@ export class SpeechControl {
         )
       })
     )
-
-    // implemented a custom continous mode her, since it didnt work on smartphone chrome
-    return $rec.pipe(expand(() => (this._stopped ? empty() : $rec)))
   }
 
   public stop() {

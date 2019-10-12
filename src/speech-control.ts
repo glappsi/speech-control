@@ -1,4 +1,4 @@
-import { Observable, Subscriber, empty, throwError, timer } from 'rxjs'
+import { Observable, Subscriber, empty, throwError, timer, from } from 'rxjs'
 import { finalize, filter, debounceTime, repeatWhen, retryWhen, mergeMap } from 'rxjs/operators'
 import { append, remove, INotificationResult, INotification } from './components/notification'
 
@@ -51,6 +51,43 @@ export class SpeechControl {
     this.stop()
   }
 
+  public askForPermission(): Observable<any> {
+    return from(
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        // stop it immediately, its just used to trigger the permission
+        stream.getTracks().forEach(function(track) {
+          track.stop()
+        })
+      })
+    )
+  }
+
+  public whenPermissionGranted(): Observable<any> {
+    if (!(navigator as any).permissions) {
+      console.warn('SPEECH CONTROL: PERMISSIONS API IS NOT AVAILABLE, USING getUserMedia HERE')
+      return this.askForPermission()
+    }
+
+    const handleState = (subscriber: Subscriber<any>, status: PermissionStatus) => {
+      if (status.state == 'granted') {
+        subscriber.next()
+        subscriber.complete()
+      } else if (status.state == 'prompt') {
+        status.addEventListener('change', ({ target }) => {
+          handleState(subscriber, target as PermissionStatus)
+        })
+      } else {
+        subscriber.error()
+      }
+    }
+
+    return new Observable(subscriber => {
+      ;(navigator as any).permissions
+        .query({ name: 'microphone' })
+        .then((status: PermissionStatus) => handleState(subscriber, status))
+    })
+  }
+
   public isEnabled() {
     // check if not disabled and speech _recognition available
     return (
@@ -86,20 +123,22 @@ export class SpeechControl {
     this._stopped = false
     return new Observable<SpeechRecognitionEvent>(subscriber => {
       if (this.isEnabled()) {
-        if (!this._notificationShown) {
-          const notification = append(notificationOptions || this.notification)
-          notification.then((nr: INotificationResult) =>
-            nr.disable.then(() => {
-              this._disableRec()
-              subscriber.error(SpeechControlErrors.Disabled)
-            })
-          )
-
-          setTimeout(remove, 3000)
-          this._notificationShown = true
-        }
-
         this._record(subscriber)
+
+        this.whenPermissionGranted().subscribe(() => {
+          if (!this._notificationShown) {
+            const notification = append(notificationOptions || this.notification)
+            notification.then((nr: INotificationResult) =>
+              nr.disable.then(() => {
+                this._disableRec()
+                subscriber.error(SpeechControlErrors.Disabled)
+              })
+            )
+
+            setTimeout(remove, 3000)
+            this._notificationShown = true
+          }
+        })
       } else {
         subscriber.error(SpeechControlErrors.NoSpeechRecognition)
       }
@@ -119,6 +158,7 @@ export class SpeechControl {
       retryWhen((error: Observable<any>) => {
         return error.pipe(
           mergeMap((error: any) => {
+            console.log(error)
             // retry if noting said
             if (error && error.error === 'no-speech') {
               return timer(500)

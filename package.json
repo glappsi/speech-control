@@ -21,6 +21,9 @@
     "type": "git",
     "url": "https://github.com/glappsi/speech-control"
   },
+  "bugs": {
+    "url": "https://github.com/glappsi/speech-control/issues"
+  },
   "license": "GPLv3",
   "engines": {
     "node": ">=6.0.0"

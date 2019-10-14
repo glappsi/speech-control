@@ -1,6 +1,6 @@
 # Speech Control
 
-A simple class to start and observe speech input.
+A class to handle microphone permissions, start and observe speech input.
 It also adds a simple notification which lets the user disable 
 
 ## Usage

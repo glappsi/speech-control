@@ -1,7 +1,7 @@
 {
   "name": "@aurally/speech-control",
   "version": "1.1.1",
-  "description": "",
+  "description": "A class to handle microphone permissions, start and observe speech input",
   "keywords": [
     "speech",
     "voice",
@@ -19,7 +19,7 @@
   "author": "Florian Glappa <glappa.js@gmail.com>",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/glappsi/speech-control"
   },
   "license": "GPLv3",
   "engines": {
